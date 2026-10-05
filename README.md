@@ -1,1 +1,478 @@
-# Ex
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Retail Dashboard (2009-2010)</title>
+    <!-- Chart.js สำหรับวาดกราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #121417;          /* เทาเข้มเกือบดำ */
+            --bg-card: #1c2026;          /* เทาเข้มการ์ด */
+            --border-silver: #3a414d;    /* ขอบเทาเงินอ่อน */
+            --text-primary: #e6e9ef;     /* ขาวเงิน */
+            --text-secondary: #9aa2b1;   /* เทาเงินสว่าง */
+            --accent-silver: #d1d5db;     /* เงินเมทัลลิก */
+            --accent-silver-glow: rgba(209, 213, 219, 0.15);
+            --gradient-card: linear-gradient(145deg, #22272e, #181b20);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-silver);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1 span {
+            font-size: 14px;
+            background: var(--border-silver);
+            color: var(--accent-silver);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .btn-refresh {
+            background: linear-gradient(135deg, #e6e9ef, #9aa2b1);
+            color: #121417;
+            border: none;
+            padding: 10px 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px var(--accent-silver-glow);
+        }
+
+        .btn-refresh:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-silver);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .kpi-card .title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-card .value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .kpi-card .subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* Charts 2x2 Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 992px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-silver);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .card h2 {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            border-left: 3px solid var(--accent-silver);
+            padding-left: 10px;
+        }
+
+        /* Table Style */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            padding: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-silver);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Online Retail Dashboard <span>2009 - 2010</span></h1>
+        <button class="btn-refresh" onclick="fetchDashboardData()">โหลดข้อมูลใหม่</button>
+    </div>
+
+    <!-- Key Performance Indicators (KPIs) -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="title">ยอดขายรวม (Total Revenue)[cite: 1]</div>
+            <div class="value" id="kpi-revenue">฿395,920,518</div>
+            <div class="subtitle">ธ.ค. 2009 - ธ.ค. 2010 (อัตราแปลง 1 GBP = 45 THB)[cite: 1]</div>
+        </div>
+        <div class="kpi-card">
+            <div class="title">จำนวนคำสั่งซื้อ (Invoices)[cite: 1]</div>
+            <div class="value" id="kpi-invoices">19,213[cite: 1]</div>
+            <div class="subtitle">รายการสั่งซื้อทั้งหมด[cite: 1]</div>
+        </div>
+        <div class="kpi-card">
+            <div class="title">จำนวนลูกค้า (Customers)[cite: 1]</div>
+            <div class="value" id="kpi-customers">4,312[cite: 1]</div>
+            <div class="subtitle">ลูกค้าที่เป็นสมาชิก[cite: 1]</div>
+        </div>
+        <div class="kpi-card">
+            <div class="title">จำนวนประเทศ (Countries)[cite: 1]</div>
+            <div class="value" id="kpi-countries">37[cite: 1]</div>
+            <div class="subtitle">ตลาดต่างประเทศทั่วโลก[cite: 1]</div>
+        </div>
+    </div>
+
+    <!-- 4 Charts Grid -->
+    <div class="charts-grid">
+        <!-- Chart 1: Sales Trend -->
+        <div class="card">
+            <h2>1. แนวโน้มยอดขายรายเดือน (Monthly Sales Trend)</h2>
+            <canvas id="salesChart" height="150"></canvas>
+        </div>
+
+        <!-- Chart 2: Country Distribution -->
+        <div class="card">
+            <h2>2. สัดส่วนยอดขายตามประเทศ (Sales by Country)</h2>
+            <canvas id="countryChart" height="150"></canvas>
+        </div>
+
+        <!-- Chart 3: Top Selling Products -->
+        <div class="card">
+            <h2>3. 5 อันดับสินค้าขายดีที่สุด (Top Selling Products)</h2>
+            <canvas id="topProductsChart" height="150"></canvas>
+        </div>
+
+        <!-- Chart 4: Sales by Time Period -->
+        <div class="card">
+            <h2>4. ยอดขายแบ่งตามช่วงเวลา (Sales by Time Period)</h2>
+            <canvas id="timeSalesChart" height="150"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Table -->
+    <div class="card">
+        <h2>รายการสั่งซื้อล่าสุด (Recent Transactions)</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Stock Code</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Invoice Date</th>
+                        <th>Price (THB)</th>
+                        <th>Total Amount (THB)</th>
+                        <th>Country</th>
+                    </tr>
+                </thead>
+                <tbody id="transaction-table">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let salesChartInstance = null;
+        let countryChartInstance = null;
+        let topProductsChartInstance = null;
+        let timeSalesChartInstance = null;
+
+        const mockData = {
+            monthlyLabels: ['2009-12', '2010-01', '2010-02', '2010-03', '2010-04', '2010-05', '2010-06', '2010-07', '2010-08', '2010-09', '2010-10', '2010-11', '2010-12'],
+            monthlySales: [30757680, 25011120, 22705153, 31364031, 26639190, 26902502, 28636701, 26538128, 27100107, 37305628, 46490040, 52490701, 13979537],
+            topCountries: {
+                labels: ['United Kingdom', 'EIRE', 'Netherlands', 'Germany', 'France'],
+                data: [332173999, 16021884, 12095296, 9091143, 6574818]
+            },
+            topProducts: {
+                labels: ['WHITE HANGING HEART T-LIGHT HOLDER', 'REGENCY CAKESTAND 3 TIER', 'Manual', 'ASSORTED COLOUR BIRD ORNAMENT', 'JUMBO BAG RED RETROSPOT'],
+                data: [6810262, 6467742, 4433940, 3163096, 2323991]
+            },
+            timeSales: {
+                labels: ['เช้า (06:00-11:59)', 'บ่าย (12:00-16:59)', 'เย็น/ค่ำ (17:00-21:00)'],
+                data: [144856555, 230984823, 20079141]
+            },
+            recentTransactions: [
+                { invoice: '489434', stockCode: '85048', description: '15CM CHRISTMAS GLASS BALL 20 LIGHTS', quantity: 12, date: '2009-12-01 07:45', price: '฿312.75', total: '฿3,753.00', country: 'United Kingdom' },
+                { invoice: '489434', stockCode: '79323P', description: 'PINK CHERRY LIGHTS', quantity: 12, date: '2009-12-01 07:45', price: '฿303.75', total: '฿3,645.00', country: 'United Kingdom' },
+                { invoice: '489434', stockCode: '79323W', description: 'WHITE CHERRY LIGHTS', quantity: 12, date: '2009-12-01 07:45', price: '฿303.75', total: '฿3,645.00', country: 'United Kingdom' },
+                { invoice: '489434', stockCode: '22041', description: 'RECORD FRAME 7" SINGLE SIZE', quantity: 48, date: '2009-12-01 07:45', price: '฿94.50', total: '฿4,536.00', country: 'United Kingdom' },
+                { invoice: '489434', stockCode: '21232', description: 'STRAWBERRY CERAMIC TRINKET BOX', quantity: 24, date: '2009-12-01 07:45', price: '฿56.25', total: '฿1,350.00', country: 'United Kingdom' }
+            ]
+        };
+
+        // กราฟที่ 1: Line Chart (เขียว Emerald สื่อถึงยอดขาย/การเงิน)
+        function renderSalesChart(labels, data) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if (salesChartInstance) salesChartInstance.destroy();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดขายรวม (บาท ฿)',
+                        data: data,
+                        borderColor: '#10B981',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#10B981',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#9aa2b1' } } },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'แกน X: เดือน/ปี (Year-Month)', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { color: '#9aa2b1' }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                        },
+                        y: { 
+                            title: { display: true, text: 'แกน Y: ยอดขายรวม (บาท ฿)', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { 
+                                color: '#9aa2b1',
+                                callback: function(value) { return '฿' + (value / 1000000).toFixed(1) + 'M'; }
+                            }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // กราฟที่ 2: Doughnut Chart (สีตามอัตลักษณ์/ธงของแต่ละประเทศ)
+        function renderCountryChart(labels, data) {
+            const ctx = document.getElementById('countryChart').getContext('2d');
+            if (countryChartInstance) countryChartInstance.destroy();
+
+            // UK = น้ำเงิน Union Jack, EIRE = เขียวไอร์แลนด์, Netherlands = ส้มสัญลักษณ์ดัตช์, Germany = เหลืองทอง, France = ฟ้าฝรั่งเศส
+            const countryColors = ['#2563EB', '#059669', '#F97316', '#EAB308', '#38BDF8'];
+
+            countryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: countryColors,
+                        borderWidth: 2,
+                        borderColor: '#1c2026'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { color: '#9aa2b1' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ประเทศ: ${context.label} | ยอดขาย: ฿${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // กราฟที่ 3: Horizontal Bar Chart (ไล่สีพรีเมียมตามอันดับสินค้า)
+        function renderTopProductsChart(labels, data) {
+            const ctx = document.getElementById('topProductsChart').getContext('2d');
+            if (topProductsChartInstance) topProductsChartInstance.destroy();
+
+            const productColors = ['#8B5CF6', '#EC4899', '#06B6D4', '#3B82F6', '#10B981'];
+
+            topProductsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดขายรวม (บาท ฿)',
+                        data: data,
+                        backgroundColor: productColors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'แกน X: ยอดขายรวม (บาท ฿)', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { 
+                                color: '#9aa2b1',
+                                callback: function(value) { return '฿' + (value / 1000000).toFixed(1) + 'M'; }
+                            }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                        },
+                        y: { 
+                            title: { display: true, text: 'แกน Y: ชื่อสินค้า', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { color: '#9aa2b1', font: { size: 10 } }, 
+                            grid: { display: false } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // กราฟที่ 4: Vertical Bar Chart (สีตามบรรยากาศช่วงเวลาของวัน)
+        function renderTimeSalesChart(labels, data) {
+            const ctx = document.getElementById('timeSalesChart').getContext('2d');
+            if (timeSalesChartInstance) timeSalesChartInstance.destroy();
+
+            // เช้า = เหลืองทอง, บ่าย = ส้มจัด, เย็น/ค่ำ = น้ำเงินม่วง
+            const timeColors = ['#FBBF24', '#F97316', '#6366F1'];
+
+            timeSalesChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดขายรวม (บาท ฿)',
+                        data: data,
+                        backgroundColor: timeColors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'แกน X: ช่วงเวลาของวัน', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { color: '#9aa2b1' }, 
+                            grid: { display: false } 
+                        },
+                        y: { 
+                            title: { display: true, text: 'แกน Y: ยอดขายรวม (บาท ฿)', color: '#d1d5db', font: { size: 12 } },
+                            ticks: { 
+                                color: '#9aa2b1',
+                                callback: function(value) { return '฿' + (value / 1000000).toFixed(0) + 'M'; }
+                            }, 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // ฟังก์ชันตาราง
+        function renderTable(transactions) {
+            const tbody = document.getElementById('transaction-table');
+            tbody.innerHTML = transactions.map(item => `
+                <tr>
+                    <td>${item.invoice}</td>
+                    <td>${item.stockCode}</td>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.date}</td>
+                    <td>${item.price}</td>
+                    <td><strong>${item.total}</strong></td>
+                    <td>${item.country}</td>
+                </tr>
+            `).join('');
+        }
+
+        function fetchDashboardData() {
+            renderSalesChart(mockData.monthlyLabels, mockData.monthlySales);
+            renderCountryChart(mockData.topCountries.labels, mockData.topCountries.data);
+            renderTopProductsChart(mockData.topProducts.labels, mockData.topProducts.data);
+            renderTimeSalesChart(mockData.timeSales.labels, mockData.timeSales.data);
+            renderTable(mockData.recentTransactions);
+        }
+
+        window.onload = fetchDashboardData;
+    </script>
+</body>
+</html>
